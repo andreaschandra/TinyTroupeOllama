@@ -4,9 +4,19 @@
 refresh_cache = False
 use_cache = False
 
+
 def pytest_addoption(parser):
-    parser.addoption("--refresh_cache", action="store_true", help="Refreshes the API cache for the tests, to ensure the latest data is used.")
-    parser.addoption("--use_cache", action="store_true", help="Uses the API cache for the tests, to reduce the number of actual API calls.")
+    parser.addoption(
+        "--refresh_cache",
+        action="store_true",
+        help="Refreshes the API cache for the tests, to ensure the latest data is used.",
+    )
+    parser.addoption(
+        "--use_cache",
+        action="store_true",
+        help="Uses the API cache for the tests, to reduce the number of actual API calls.",
+    )
+
 
 def pytest_generate_tests(metafunc):
     global refresh_cache, use_cache

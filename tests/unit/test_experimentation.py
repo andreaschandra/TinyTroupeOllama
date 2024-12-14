@@ -1,13 +1,14 @@
+import sys
+
 import pytest
 
-import sys
-sys.path.append('../../tinytroupe/')
-sys.path.append('../../')
-sys.path.append('..')
+sys.path.append("../../tinytroupe/")
+sys.path.append("../../")
+sys.path.append("..")
 
 from testing_utils import *
-
 from tinytroupe.experimentation import ABRandomizer
+
 
 def test_randomize():
     randomizer = ABRandomizer()
@@ -22,6 +23,7 @@ def test_randomize():
         else:
             raise Exception(f"No randomization found for item {i}")
 
+
 def test_derandomize():
     randomizer = ABRandomizer()
 
@@ -31,6 +33,7 @@ def test_derandomize():
         c, d = randomizer.derandomize(i, a, b)
 
         assert (c, d) == ("option1", "option2")
+
 
 def test_derandomize_name():
     randomizer = ABRandomizer()
@@ -42,7 +45,7 @@ def test_derandomize_name():
         if randomizer.choices[i] == (0, 1):
             # "Favorite pet? A: cats, B: dogs"
             # user selects "A"
-            # user selected the control group 
+            # user selected the control group
             assert real_name == "control"
         elif randomizer.choices[i] == (1, 0):
             # "Favorite pet? A: dogs, B: cats"
@@ -60,6 +63,6 @@ def test_passtrough_name():
 
     assert real_name == "option3"
 
-def test_intervention_1():
-    pass # TODO
 
+def test_intervention_1():
+    pass  # TODO

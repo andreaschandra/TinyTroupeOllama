@@ -1,14 +1,16 @@
-import pytest
+import sys
 from unittest.mock import MagicMock
 
-import sys
-sys.path.append('../../tinytroupe/')
-sys.path.append('../../')
-sys.path.append('..')
+import pytest
+
+sys.path.append("../../tinytroupe/")
+sys.path.append("../../")
+sys.path.append("..")
 
 
-from tinytroupe.utils import name_or_empty, extract_json, repeat_on_error
 from testing_utils import *
+from tinytroupe.utils import extract_json, name_or_empty, repeat_on_error
+
 
 def test_extract_json():
     # Test with a simple JSON string
@@ -32,7 +34,7 @@ def test_extract_json():
     assert result == {}
 
     # Test with no JSON
-    text = 'Some text with no JSON'
+    text = "Some text with no JSON"
     result = extract_json(text)
     assert result == {}
 
@@ -60,18 +62,22 @@ def test_repeat_on_error():
     retries = 3
     dummy_function = MagicMock(side_effect=DummyException())
     with pytest.raises(DummyException):
+
         @repeat_on_error(retries=retries, exceptions=[DummyException])
         def decorated_function():
             dummy_function()
+
         decorated_function()
     assert dummy_function.call_count == retries
 
     # Test without any exception occurring
     retries = 3
     dummy_function = MagicMock()  # no exception raised
+
     @repeat_on_error(retries=retries, exceptions=[DummyException])
     def decorated_function():
         dummy_function()
+
     decorated_function()
     assert dummy_function.call_count == 1
 
@@ -79,13 +85,14 @@ def test_repeat_on_error():
     retries = 3
     dummy_function = MagicMock(side_effect=RuntimeError())
     with pytest.raises(RuntimeError):
+
         @repeat_on_error(retries=retries, exceptions=[DummyException])
         def decorated_function():
             dummy_function()
+
         decorated_function()
     assert dummy_function.call_count == 1
 
 
 # TODO
-#def test_json_serializer():
-    
+# def test_json_serializer():

@@ -1,34 +1,33 @@
-import pytest
 import os
-
 import sys
-sys.path.append('../../tinytroupe/')
-sys.path.append('../../')
-sys.path.append('..')
+
+import pytest
+
+sys.path.append("../../tinytroupe/")
+sys.path.append("../../")
+sys.path.append("..")
 
 
-from tinytroupe.examples import create_oscar_the_architect
-from tinytroupe.control import Simulation
 import tinytroupe.control as control
+from testing_utils import *
+from tinytroupe.control import Simulation
+from tinytroupe.examples import create_oscar_the_architect
 from tinytroupe.factory import TinyPersonFactory
 from tinytroupe.validation import TinyPersonValidator
 
-from testing_utils import *
 
 def test_validate_person(setup):
 
     ##########################
     # Banker
     ##########################
-    banker_spec =\
-    """
+    banker_spec = """
     A vice-president of one of the largest brazillian banks. Has a degree in engineering and an MBA in finance. 
     Is facing a lot of pressure from the board of directors to fight off the competition from the fintechs.    
     """
     banker_factory = TinyPersonFactory(banker_spec)
     banker = banker_factory.generate_person()
-    banker_expectations =\
-    """
+    banker_expectations = """
     He/she is:
     - Wealthy
     - Very intelligent and ambitious
@@ -46,24 +45,26 @@ def test_validate_person(setup):
     - Deep knowledge of finance, economics and financial technology
     - Is a bit of a snob
     """
-    banker_score, banker_justification = TinyPersonValidator.validate_person(banker, expectations=banker_expectations, include_agent_spec=False, max_content_length=None)
+    banker_score, banker_justification = TinyPersonValidator.validate_person(
+        banker,
+        expectations=banker_expectations,
+        include_agent_spec=False,
+        max_content_length=None,
+    )
     print("Banker score: ", banker_score)
     print("Banker justification: ", banker_justification)
 
     assert banker_score > 0.5, f"Validation score is too low: {banker_score:.2f}"
 
-
     ##########################
-    # Busy Knowledge Worker   
-    ########################## 
-    monk_spec =\
-    """
+    # Busy Knowledge Worker
+    ##########################
+    monk_spec = """
     A poor buddhist monk living alone and isolated in a remote montain.
     """
     monk_spec_factory = TinyPersonFactory(monk_spec)
     monk = monk_spec_factory.generate_person()
-    monk_expectations =\
-    """
+    monk_expectations = """
     Some characteristics of this person:
     - Is very poor, and in fact do not seek money
     - Has no formal education, but is very wise
@@ -72,16 +73,29 @@ def test_validate_person(setup):
     - Honesty is a core value    
     """
 
-    monk_score, monk_justification = TinyPersonValidator.validate_person(monk, expectations=monk_expectations, include_agent_spec=False, max_content_length=None)
+    monk_score, monk_justification = TinyPersonValidator.validate_person(
+        monk,
+        expectations=monk_expectations,
+        include_agent_spec=False,
+        max_content_length=None,
+    )
     print("Monk score: ", monk_score)
     print("Monk justification: ", monk_justification)
-          
 
     assert monk_score > 0.5, f"Validation score is too low: {monk_score:.2f}"
 
     # Now, let's check the score for the busy knowledge worker with the wrong expectations! It has to be low!
-    wrong_expectations_score, wrong_expectations_justification = TinyPersonValidator.validate_person(monk, expectations=banker_expectations, include_agent_spec=False, max_content_length=None)
+    wrong_expectations_score, wrong_expectations_justification = (
+        TinyPersonValidator.validate_person(
+            monk,
+            expectations=banker_expectations,
+            include_agent_spec=False,
+            max_content_length=None,
+        )
+    )
 
-    assert wrong_expectations_score < 0.5, f"Validation score is too high: {wrong_expectations_score:.2f}"
+    assert (
+        wrong_expectations_score < 0.5
+    ), f"Validation score is too high: {wrong_expectations_score:.2f}"
     print("Wrong expectations score: ", wrong_expectations_score)
     print("Wrong expectations justification: ", wrong_expectations_justification)
