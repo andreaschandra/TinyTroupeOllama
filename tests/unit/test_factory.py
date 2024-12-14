@@ -8,8 +8,9 @@ sys.path.append("../../")
 sys.path.append("..")
 
 
-import tinytroupe.control as control
 from testing_utils import *
+
+import tinytroupe.control as control
 from tinytroupe.control import Simulation
 from tinytroupe.examples import create_oscar_the_architect
 from tinytroupe.factory import TinyPersonFactory

@@ -14,6 +14,7 @@ sys.path.append("../../")
 sys.path.append("..")
 
 from testing_utils import *
+
 from tinytroupe import utils
 from tinytroupe.extraction import ArtifactExporter, Normalizer
 

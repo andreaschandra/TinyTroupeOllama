@@ -11,9 +11,10 @@ sys.path.append("../../")
 sys.path.append("..")
 
 
+from testing_utils import *
+
 import tinytroupe
 import tinytroupe.control as control
-from testing_utils import *
 from tinytroupe.agent import TinyPerson
 from tinytroupe.control import Simulation
 from tinytroupe.environment import TinySocialNetwork, TinyWorld

@@ -11,6 +11,7 @@ sys.path.append("../../")
 sys.path.append("..")
 
 from testing_utils import *
+
 from tinytroupe.environment import TinyWorld
 from tinytroupe.examples import (
     create_lisa_the_data_scientist,

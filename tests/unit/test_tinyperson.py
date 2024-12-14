@@ -21,6 +21,7 @@ sys.path.insert(
 # sys.path.append('..')
 
 from testing_utils import *
+
 from tinytroupe.examples import (
     create_lisa_the_data_scientist,
     create_oscar_the_architect,

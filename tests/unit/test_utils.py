@@ -9,6 +9,7 @@ sys.path.append("..")
 
 
 from testing_utils import *
+
 from tinytroupe.utils import extract_json, name_or_empty, repeat_on_error
 
 
