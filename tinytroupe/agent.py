@@ -50,6 +50,7 @@ default["embedding_model"] = config["OpenAI"].get(
 default["max_content_display_length"] = config["OpenAI"].getint(
     "MAX_CONTENT_DISPLAY_LENGTH", 1024
 )
+default["LLM_TYPE"] = config["Simulation"].get("LLM_TYPE", "Ollama")
 
 
 from llama_index.core import Document, Settings, SimpleDirectoryReader, VectorStoreIndex
@@ -73,6 +74,7 @@ Settings.embed_model = llmaindex_openai_embed_model
 
 
 from tinytroupe import openai_utils
+from tinytroupe import ollama_utils
 from tinytroupe.utils import break_text_at_length, name_or_empty, repeat_on_error
 
 
@@ -139,6 +141,8 @@ class TinyPerson(JsonSerializableRegistry):
 
         assert name is not None, "A TinyPerson must have a name."
         self.name = name
+
+        self.ollama_client = ollama_utils.OllamaAPIClient()
 
         # @post_init makes sure that _post_init is called after __init__
 
@@ -288,19 +292,23 @@ class TinyPerson(JsonSerializableRegistry):
     def reset_prompt(self):
 
         # render the template with the current configuration
+        logger.debug(f">>>>>============= generate_agent_system_prompt() =============")
         self._init_system_message = self.generate_agent_system_prompt()
 
         # TODO actually, figure out another way to update agent state without "changing history"
 
         # reset system message
+        logger.debug(f">>>>>============= reset_prompt: set self.current_messages =============")
         self.current_messages = [
             {"role": "system", "content": self._init_system_message}
         ]
 
         # sets up the actual interaction messages to use for prompting
+        logger.debug(f">>>>>============= reset_prompt: add self.current_messages with retrieve_recent_memories =============")
         self.current_messages += self.retrieve_recent_memories()
 
         # add a final user message, which is neither stimuli or action, to instigate the agent to act properly
+        logger.debug(f">>>>>============= reset_prompt: add self.current_messages with hard coded =============")
         self.current_messages.append(
             {
                 "role": "user",
@@ -478,6 +486,8 @@ class TinyPerson(JsonSerializableRegistry):
         # Occasionally, the model will return JSON missing important keys, so we just ask it to try again
         @repeat_on_error(retries=5, exceptions=[KeyError])
         def aux_act_once():
+
+            logger.debug(f">>>============= _produce_message() =============")
             role, content = self._produce_message()
 
             cognitive_state = content["cognitive_state"]
@@ -489,6 +499,7 @@ class TinyPerson(JsonSerializableRegistry):
             attention = cognitive_state["attention"]
             emotions = cognitive_state["emotions"]
 
+            logger.debug(f">>>============= store_in_memory() =============")
             self.store_in_memory(
                 {
                     "role": role,
@@ -499,6 +510,7 @@ class TinyPerson(JsonSerializableRegistry):
             )
 
             self._actions_buffer.append(action)
+            logger.debug(f">>>============= _update_cognitive_state() =============")
             self._update_cognitive_state(
                 goals=cognitive_state["goals"],
                 attention=cognitive_state["attention"],
@@ -506,6 +518,8 @@ class TinyPerson(JsonSerializableRegistry):
             )
 
             contents.append(content)
+            
+            logger.debug(f">>>============= _display_communication() =============")
             if TinyPerson.communication_display:
                 self._display_communication(
                     role=role,
@@ -533,19 +547,13 @@ class TinyPerson(JsonSerializableRegistry):
 
         ##### Option 2: run until DONE ######
         elif until_done:
-            while (len(contents) == 0) or (
-                not contents[-1]["action"]["type"] == "DONE"
-            ):
+            while (len(contents) == 0) or (not contents[-1]["action"]["type"] == "DONE"):
 
                 # check if the agent is acting without ever stopping
                 if len(contents) > TinyPerson.MAX_ACTIONS_BEFORE_DONE:
-                    logger.warning(
-                        f"[{self.name}] Agent {self.name} is acting without ever stopping. This may be a bug. Let's stop it here anyway."
-                    )
+                    logger.warning(f"[{self.name}] Agent {self.name} is acting without ever stopping. This may be a bug. Let's stop it here anyway.")
                     break
-                if (
-                    len(contents) > 4
-                ):  # just some minimum number of actions to check for repetition, could be anything >= 3
+                if (len(contents) > 4):  # just some minimum number of actions to check for repetition, could be anything >= 3
                     # if the last three actions were the same, then we are probably in a loop
                     if (
                         contents[-1]["action"]
@@ -556,8 +564,10 @@ class TinyPerson(JsonSerializableRegistry):
                             f"[{self.name}] Agent {self.name} is acting in a loop. This may be a bug. Let's stop it here anyway."
                         )
                         break
-
+                
+                logger.debug(f">>============= aux_pre_act() =============")
                 aux_pre_act()
+                logger.debug(f">>============= aux_act_once() =============")
                 aux_act_once()
 
         if return_actions:
@@ -704,7 +714,9 @@ class TinyPerson(JsonSerializableRegistry):
         Convenience method that combines the `listen` and `act` methods.
         """
 
+        logger.debug(f">============= listen() =============")
         self.listen(speech, max_content_length=max_content_length)
+        logger.debug(f">============= act() =============")
         return self.act(
             return_actions=return_actions, max_content_length=max_content_length
         )
@@ -840,6 +852,8 @@ class TinyPerson(JsonSerializableRegistry):
         # logger.debug(f"Current messages: {self.current_messages}")
 
         # ensure we have the latest prompt (initial system message + selected messages from memory)
+        
+        logger.debug(f">>>>============= reset_prompt() =============")
         self.reset_prompt()
 
         messages = [
@@ -850,9 +864,16 @@ class TinyPerson(JsonSerializableRegistry):
         logger.debug(f"[{self.name}] Sending messages to OpenAI API")
         logger.debug(f"[{self.name}] Last interaction: {messages[-1]}")
 
-        next_message = openai_utils.client().send_message(
-            messages, response_format=CognitiveActionModel
-        )
+        if default["LLM_TYPE"] == "OpenAI":
+            logger.debug(f">>>>============= openai_utils.client().send_message() =============")
+            next_message = openai_utils.client().send_message(
+                messages, response_format=CognitiveActionModel
+            )
+        elif default["LLM_TYPE"] == "Ollama":
+            logger.debug(f">>>>============= ollama_client.send_message() =============")
+            next_message = self.ollama_client.send_message(
+                messages, response_format=CognitiveActionModel
+            )
 
         logger.debug(f"[{self.name}] Received message: {next_message}")
 

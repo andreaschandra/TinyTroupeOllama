@@ -1,26 +1,28 @@
 import json
-import urllib3
 import argparse
 from tinytroupe import utils
+from ollama import Client
+from pydantic import BaseModel
+
 
 class OllamaAPIClient:
     def __init__(self):
-        self.default = {}
+        self.default = None
 
         self.get_config()
-
+        self.client = Client(self.default["URL"])
 
     def get_config(self):
 
         config = utils.read_config_file()
 
         default = {}
-        default['URL'] = config["Ollama"].get('URL', 'localhost:11434')
-        default['MODEL'] = config["Ollama"].get('MODEL', 'tinyllama')
-        
+        default["URL"] = config["Ollama"].get("URL", "localhost:11434")
+        default["MODEL"] = config["Ollama"].get("MODEL", "tinyllama")
+
         self.default = default
 
-    def send_request(self, request_data, endpoint_url):
+    def send_message(self, current_message=None, response_format=None):
         """
         Sends a POST request with the given data to the specified URL and streams the response.
 
@@ -31,55 +33,60 @@ class OllamaAPIClient:
         Returns:
             list: A list of decoded JSON objects from the response.
         """
-        http_manager = urllib3.PoolManager()
-        request_body = json.dumps(request_data)
 
-        response = http_manager.request(
-            "POST", endpoint_url, body=request_body, preload_content=False
-        )
-        response_content_bytes = b""
+        messages = current_message
+        model = self.default["MODEL"]
+        format = response_format.model_json_schema()
 
-        for response_chunk in response.stream(amt=1024):
-            response_content_bytes += response_chunk
-        response.release_conn()
+        response = self.client.chat(messages=messages, model=model, format=format)
+        print(f"Raw response: {response}")
 
-        response_content_str = response_content_bytes.decode("utf-8").strip()
-        response_json_objects = response_content_str.split("\n")
-        return [json.loads(response_object) for response_object in response_json_objects]
+        return {"role": response.message.role, "content": response.message.content}
 
-    def extract_answer_content(self, response_json_list):
-        """
-        Extracts and concatenates the answer content from the JSON response.
 
-        Args:
-            response_json_list (list): A list of JSON objects containing the response messages.
+class Country(BaseModel):
+    name: str
+    capital: str
+    languages: list[str]
 
-        Returns:
-            str: The concatenated answer content.
-        """
-        answer_content_list = [response_item["message"]["content"] for response_item in response_json_list]
-        return "".join(answer_content_list)
 
 def main():
     """Main function to send a question to the API and print the answer."""
-    parser = argparse.ArgumentParser(description="Send a question to the API and get an answer.")
-    parser.add_argument("--question", type=str, default="why is the sky blue?", required=False, help="The question to ask the API.")
-    parser.add_argument("--model", type=str, default="tinyllama", help="The model to use for the API request.")
+    parser = argparse.ArgumentParser(
+        description="Send a question to the API and get an answer."
+    )
+    parser.add_argument(
+        "--question",
+        type=str,
+        default="Tell me about Canada.",
+        required=False,
+        help="The question to ask the API.",
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="tinyllama",
+        help="The model to use for the API request.",
+    )
     args = parser.parse_args()
 
-    request_payload = {
-        "model": args.model,
-        "messages": [{"role": "user", "content": args.question}],
-    }
+    current_message = [
+        {
+            "role": "user",
+            "content": args.question,
+        }
+    ]
+    response_format = Country
 
     ollama = OllamaAPIClient()
-    api_url = f"{ollama.default['URL']}/api/chat"
 
-    api_response_json = ollama.send_request(request_payload, api_url)
-    extracted_answer = ollama.extract_answer_content(api_response_json)
-
+    response = ollama.send_message(current_message, response_format)
+    response_dict = json.loads(response.message.content)
     print("Question: ", args.question)
-    print("Answer: ", extracted_answer)
+    print("Country: ", response_dict["name"])
+    print("Capital: ", response_dict["capital"])
+    print("Languages: ", response_dict["languages"])
+
 
 if __name__ == "__main__":
     main()
