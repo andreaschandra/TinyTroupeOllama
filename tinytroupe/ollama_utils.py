@@ -1,8 +1,10 @@
-import json
 import argparse
-from tinytroupe import utils
+import json
+
 from ollama import Client
 from pydantic import BaseModel
+
+from tinytroupe import utils
 
 
 class OllamaAPIClient:

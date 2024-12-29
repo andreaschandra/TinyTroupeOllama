@@ -323,14 +323,20 @@ class OpenAIClient:
 
         if "response_format" in chat_api_params:
             # to enforce the response format, we need to use a different method
-            logger.debug(">>>>>>========== self.client.beta.chat.completions.parse ==========")
-            logger.debug(f">>>>>>========== chat_api_params.response_format: {chat_api_params['response_format']} ==========")
+            logger.debug(
+                ">>>>>>========== self.client.beta.chat.completions.parse =========="
+            )
+            logger.debug(
+                f">>>>>>========== chat_api_params.response_format: {chat_api_params['response_format']} =========="
+            )
             del chat_api_params["stream"]
 
             return self.client.beta.chat.completions.parse(**chat_api_params)
 
         else:
-            logger.debug(">>>>>>========== self.client.chat.completions.create ==========")
+            logger.debug(
+                ">>>>>>========== self.client.chat.completions.create =========="
+            )
             return self.client.chat.completions.create(**chat_api_params)
 
     def _raw_model_response_extractor(self, response):
