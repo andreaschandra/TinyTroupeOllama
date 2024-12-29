@@ -271,6 +271,7 @@ class OpenAIClient:
                         )
                         time.sleep(waiting_time)
 
+                    logger.debug(f">>>>>============= _raw_model_call() =============")
                     response = self._raw_model_call(model, chat_api_params)
                     if self.cache_api_calls:
                         self.api_cache[cache_key] = response
@@ -322,12 +323,20 @@ class OpenAIClient:
 
         if "response_format" in chat_api_params:
             # to enforce the response format, we need to use a different method
-
+            logger.debug(
+                ">>>>>>========== self.client.beta.chat.completions.parse =========="
+            )
+            logger.debug(
+                f">>>>>>========== chat_api_params.response_format: {chat_api_params['response_format']} =========="
+            )
             del chat_api_params["stream"]
 
             return self.client.beta.chat.completions.parse(**chat_api_params)
 
         else:
+            logger.debug(
+                ">>>>>>========== self.client.chat.completions.create =========="
+            )
             return self.client.chat.completions.create(**chat_api_params)
 
     def _raw_model_response_extractor(self, response):
