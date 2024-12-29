@@ -25,4 +25,4 @@ jobs:
 
       - name: Run code style validation
         run: |
-          tox .
+          tox 
